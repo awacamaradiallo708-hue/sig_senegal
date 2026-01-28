@@ -1,0 +1,427 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <!-- Bootstrap 5 CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="css/leaflet.css" />
+    <!-- Plugins CSS -->
+    <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+    <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+    <link rel="stylesheet" href="css/leaflet.photon.css">
+    <link rel="stylesheet" href="css/leaflet-measure.css">
+    <link rel="stylesheet" href="css/MarkerCluster.css">
+    <link rel="stylesheet" href="css/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="css/Control.MiniMap.min.css">
+    <link rel="stylesheet" href="css/leaflet.draw.css">
+    <!-- Custom CSS -->
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            z-index: 1030;
+        }
+        #map {
+            height: calc(100vh - 56px);
+            width: 100%;
+        }
+        .sidebar {
+            position: absolute;
+            top: 56px;
+            bottom: 0;
+            width: 300px;
+            background: white;
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 12px;
+            margin: 10px;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-left {
+            left: 0;
+            transform: translateX(-100%);
+        }
+        .sidebar-right {
+            right: 0;
+            transform: translateX(100%);
+        }
+        .sidebar.show {
+            transform: translateX(0);
+        }
+        .coord-display, .scale-display {
+            position: absolute;
+            bottom: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .coord-display {
+            left: 10px;
+        }
+        .scale-display {
+            left: 200px;
+        }
+        .minimap {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 150px;
+            height: 150px;
+            z-index: 1000;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-item.disabled {
+            opacity: 0.5;
+        }
+        .layer-control label {
+            display: block;
+            cursor: pointer;
+        }
+        .leaflet-control-layers {
+            background: white;
+        }
+        .leaflet-control-layers-list {
+            background: white;
+        }
+        .basemap-item {
+            margin-bottom: 5px;
+        }
+        .basemap-item input {
+            margin-right: 5px;
+        }
+        .custom-marker {
+            background: none;
+            border: none;
+        }
+        /* Responsive pour mobiles et tablettes */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                margin: 5px;
+                border-radius: 8px;
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .menu-btn {
+                display: inline-block !important;
+            }
+            .layers-btn {
+                display: none;
+            }
+            #map {
+                height: calc(100vh - 56px);
+            }
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #map, #map * { visibility: visible; }
+            #map { position: absolute; left: 0; top: 0; }
+        }
+    </style>
+</head>
+    <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-map-marked-alt"></i> SIG Sénégal</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="home-link"><i class="fas fa-home"></i> Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="about-link"><i class="fas fa-info-circle"></i> À propos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="catalog-link"><i class="fas fa-database"></i> Catalogue des données</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="spatial-query-link"><i class="fas fa-search-location"></i> Requête spatiale</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="attribute-query-link"><i class="fas fa-filter"></i> Requête attributaire</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="downloadDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-download"></i> Téléchargements
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="download-csv"><i class="fas fa-file-csv"></i> Télécharger CSV</a></li>
+                            <li><a class="dropdown-item" href="#" id="download-geojson"><i class="fas fa-file-code"></i> Télécharger GeoJSON</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="btn btn-outline-light me-2 menu-btn" id="menu-btn" title="Menu" style="display: none;">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2 layers-btn" id="layers-btn" title="Couches">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="basemaps-btn" title="Fonds de carte">
+                        <i class="fas fa-map"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="measure-btn" title="Mesure">
+                        <i class="fas fa-ruler"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="zoom-in-btn" title="Zoom avant">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="zoom-out-btn" title="Zoom arrière">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="home-btn" title="Vue initiale">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button class="btn btn-outline-light me-2" id="print-btn" title="Impression">
+                        <i class="fas fa-print"></i>
+                    </button>
+                    <input type="text" class="form-control me-2" id="search-input" placeholder="Recherche rapide" style="width: 200px;">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Panneaux latéraux -->
+    <div class="sidebar sidebar-left" id="layers-panel">
+        <div class="card shadow rounded-3 border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i> Menu</h5>
+                <button class="btn-close btn-close-white" aria-label="Fermer" id="close-layers-panel"></button>
+            </div>
+            <div class="card-body p-0">
+                <div class="accordion accordion-flush" id="menu-accordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#couches" aria-expanded="true" aria-controls="couches">
+                                <i class="fas fa-layer-group me-2"></i> Couches
+                            </button>
+                        </h2>
+                        <div id="couches" class="accordion-collapse collapse show" data-bs-parent="#menu-accordion">
+                            <div class="accordion-body">
+                                <div id="layers-control"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#spatial-query" aria-expanded="false" aria-controls="spatial-query">
+                                <i class="fas fa-search-location me-2"></i> Requête spatiale
+                            </button>
+                        </h2>
+                        <div id="spatial-query" class="accordion-collapse collapse" data-bs-parent="#menu-accordion">
+                            <div class="accordion-body">
+                                <select class="form-select mb-2" id="spatial-operator">
+                                    <option value="intersects">Intersecte</option>
+                                    <option value="contains">Contient</option>
+                                    <option value="within">À l'intérieur</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm me-2" id="draw-query">Dessiner</button>
+                                <button class="btn btn-secondary btn-sm" id="clear-query">Effacer</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#attribute-query" aria-expanded="false" aria-controls="attribute-query">
+                                <i class="fas fa-filter me-2"></i> Requête attributaire
+                            </button>
+                        </h2>
+                        <div id="attribute-query" class="accordion-collapse collapse" data-bs-parent="#menu-accordion">
+                            <div class="accordion-body">
+                                <h6>Recherche générale</h6>
+                                <select class="form-select mb-2" id="attribute-layer">
+                                    <option value="region">Régions</option>
+                                    <option value="departement">Départements</option>
+                                    <option value="arrondissement">Arrondissements</option>
+                                    <option value="routes">Routes</option>
+                                    <option value="localites">Localités</option>
+                                </select>
+                                <input type="text" class="form-control mb-2" id="attribute-field" placeholder="Champ (ex: Région)">
+                                <input type="text" class="form-control mb-2" id="attribute-value" placeholder="Valeur">
+                                <button class="btn btn-primary btn-sm" id="run-attribute-query">Rechercher</button>
+                                <hr>
+                                <h6>Recherche rapide de localité</h6>
+                                <input type="text" class="form-control mb-2" id="localite-search" placeholder="Nom de la localité">
+                                <button class="btn btn-success btn-sm" id="search-localite">Rechercher et zoomer</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navigation" aria-expanded="false" aria-controls="navigation">
+                                <i class="fas fa-compass me-2"></i> Navigation
+                            </button>
+                        </h2>
+                        <div id="navigation" class="accordion-collapse collapse" data-bs-parent="#menu-accordion">
+                            <div class="accordion-body">
+                                <button class="btn btn-outline-primary btn-sm w-100 mb-2" id="home-btn-panel"><i class="fas fa-home me-2"></i> Accueil</button>
+                                <button class="btn btn-outline-info btn-sm w-100" id="about-btn-panel"><i class="fas fa-info-circle me-2"></i> À propos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar sidebar-right show" id="basemaps-legend-panel">
+        <div class="p-3">
+            <h5><i class="fas fa-map"></i> Fonds de carte</h5>
+            <div id="basemaps-control">
+                <div class="basemap-item">
+                    <label><input type="radio" name="basemap" value="osm" checked> OpenStreetMap</label>
+                </div>
+                <div class="basemap-item">
+                    <label><input type="radio" name="basemap" value="dark"> CartoDB Dark Matter</label>
+                </div>
+                <div class="basemap-item">
+                    <label><input type="radio" name="basemap" value="satellite"> Google Satellite</label>
+                </div>
+            </div>
+            <hr>
+            <h5><i class="fas fa-palette"></i> Légende</h5>
+            <div id="legend-control">
+                <div class="legend-item" id="legend-regions">
+                    <div style="width: 20px; height: 20px; background-color: #7aea9f; border: 1px solid #000;"></div>
+                    <span>Régions</span>
+                </div>
+                <div class="legend-item" id="legend-departements">
+                    <div style="width: 20px; height: 20px; border: 4px solid #e4261c;"></div>
+                    <span>Départements</span>
+                </div>
+                <div class="legend-item" id="legend-arrondissements">
+                    <div style="width: 20px; height: 20px; border: 2px solid #ff9a17;"></div>
+                    <span>Arrondissements</span>
+                </div>
+                <div class="legend-item" id="legend-routes">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#d41159" stroke-width="6" stroke-linecap="round"/>
+                    </svg>
+                    <span>Route principale 4 voies</span>
+                </div>
+                <div class="legend-item" id="legend-routes-2voies">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#ff6b35" stroke-width="5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Route principale 2 voies</span>
+                </div>
+                <div class="legend-item" id="legend-routes-principale">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#ff0000" stroke-width="5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Route principale</span>
+                </div>
+                <div class="legend-item" id="legend-routes-secondaire">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#ffa500" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <span>Piste secondaire</span>
+                </div>
+                <div class="legend-item" id="legend-routes-automobile">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#ffff00" stroke-width="2.5" stroke-dasharray="3,3" stroke-linecap="round"/>
+                    </svg>
+                    <span>Piste automobile</span>
+                </div>
+                <div class="legend-item" id="legend-chemin-fer">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#000000" stroke-width="3" stroke-dasharray="5,5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Chemin de fer</span>
+                </div>
+                <div class="legend-item" id="legend-digue">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#00ff00" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    <span>Digue</span>
+                </div>
+                <div class="legend-item" id="legend-pistes">
+                    <svg width="30" height="20" style="display: inline-block; vertical-align: middle; margin-right: 5px;">
+                        <line x1="0" y1="10" x2="30" y2="10" stroke="#90ee90" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Autres pistes</span>
+                </div>
+                <div class="legend-item" id="legend-localites">
+                    <i class="fas fa-map-marker-alt" style="color: red; font-size: 20px;"></i>
+                    <span>Localités</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale À propos -->
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="aboutModalLabel"><i class="fas fa-info-circle me-2"></i>À propos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Cette application SIG permet de visualiser les infrastructures géographiques du Sénégal (Régions, Départements, Arrondissements, Localités, Routes).</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carte -->
+    <div id="map"></div>
+
+    <!-- Affichages dynamiques -->
+    <div class="coord-display" id="coord-display">Lat: 0.0000, Lng: 0.0000</div>
+    <div class="scale-display" id="scale-display">Échelle: 1:1,000,000</div>
+
+    <!-- Console d'informations -->
+    <div id="info-console" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); padding: 10px; border-top: 2px solid #007bff; font-size: 14px; z-index: 1000;"></div>
+
+    <!-- Scripts -->
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <!-- Data scripts -->
+    <script src="data/Region_3.js"></script>
+    <script src="data/Departement_4.js"></script>
+    <script src="data/Arrondissement_5.js"></script>
+    <script src="data/Routes_6.js"></script>
+    <script src="data/localites_7.js"></script>
+    <!-- Leaflet and plugins -->
+    <script src="js/leaflet.js"></script>
+    <script src="js/L.Control.Layers.Tree.min.js"></script>
+    <script src="js/L.Control.Locate.min.js"></script>
+    <script src="js/leaflet.photon.js"></script>
+    <script src="js/leaflet-measure.js"></script>
+    <script src="js/leaflet.markercluster.js"></script>
+    <script src="js/leaflet-hash.js"></script>
+    <script src="js/Autolinker.min.js"></script>
+    <script src="js/qgis2web_expressions.js"></script>
+    <script src="js/Control.MiniMap.min.js"></script>
+    <script src="js/leaflet.draw.js"></script>
+    <script src="js/turf.min.js"></script>
+    <!-- Main script -->
+    <script src="js/script.js"></script>
+    </body>
+</html>
