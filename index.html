@@ -465,10 +465,6 @@
 
     <!-- Scripts -->
     <script src="js/bootstrap.bundle.min.js"></script>
-    <!-- JSZip 2.x requis pour la compatibilité avec shp-write -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
-    <!-- Librairie pour générer les Shapefiles -->
-    <script src="https://unpkg.com/shp-write@0.3.2/shpwrite.js"></script>
     <!-- Data scripts -->
     <script src="data/Region_3.js"></script>
     <script src="data/Departement_4.js"></script>
@@ -488,6 +484,10 @@
     <script src="js/Control.MiniMap.min.js"></script>
     <script src="js/leaflet.draw.js"></script>
     <script src="js/turf.min.js"></script>
+    <!-- JSZip 2.x requis pour la compatibilité avec shp-write (placé après les plugins pour éviter les conflits) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+    <!-- Librairie pour générer les Shapefiles -->
+    <script src="https://unpkg.com/shp-write@0.3.2/shpwrite.js"></script>
     <!-- Main script -->
     <script src="js/script.js?v=2.0"></script>
     <script>

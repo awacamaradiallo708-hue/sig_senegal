@@ -523,7 +523,14 @@ document.getElementById('measure-btn').addEventListener('click', function() {
 document.getElementById('search-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         var query = this.value;
-        photonControl.search(query);
+        // photonControl n'a pas de méthode search publique.
+        // On simule une saisie dans l'input du contrôle pour déclencher la recherche.
+        if (photonControl.input) {
+            photonControl.input.value = query;
+            photonControl.input.dispatchEvent(new Event('input'));
+            // Optionnel : mettre le focus pour voir les résultats
+            photonControl.input.focus();
+        }
     }
 });
 
