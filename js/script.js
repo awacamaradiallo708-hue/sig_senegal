@@ -28,6 +28,11 @@ var satellite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
     attribution: 'Â© Google'
 });
 
+// Couches pour la MiniMap (instances séparées)
+var osmMini = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+var darkMini = L.tileLayer('https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png');
+var satelliteMini = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}');
+
 // Ajouter OSM par défaut
 osm.addTo(map);
 
@@ -77,8 +82,7 @@ var photonControl = L.control.photon({
 photonControl.addTo(map);
 
 // Mini map - initialisation
-var miniMapLayer = satellite;
-var miniMap = new L.Control.MiniMap(miniMapLayer, {
+var miniMap = new L.Control.MiniMap(osmMini, {
     position: 'bottomright',
     toggleDisplay: false,
     minimized: false
@@ -87,16 +91,40 @@ var miniMap = new L.Control.MiniMap(miniMapLayer, {
 // =========================================
 // COUCHES DE DONNÉES
 // =========================================
+// Fonction pour obtenir la couleur par région
+function getRegionColor(name) {
+    if (!name) return '#3388ff';
+    var colors = {
+        'DAKAR': '#FF0000',       // Rouge
+        'DIOURBEL': '#00FF00',    // Vert
+        'FATICK': '#0000FF',      // Bleu
+        'KAFFRINE': '#FFFF00',    // Jaune
+        'KAOLACK': '#FF00FF',     // Magenta
+        'KÉDOUGOU': '#00FFFF',    // Cyan
+        'KOLDA': '#800000',       // Marron
+        'LOUGA': '#008000',       // Vert foncé
+        'MATAM': '#000080',       // Bleu marine
+        'SAINT-LOUIS': '#808000', // Olive
+        'SÉDHIOU': '#800080',     // Pourpre
+        'TAMBACOUNDA': '#008080', // Sarcelle
+        'THIÈS': '#C0C0C0',       // Argent
+        'ZIGUINCHOR': '#FFA500'   // Orange
+    };
+    return colors[name.toUpperCase()] || '#3388ff';
+}
+
 // Créer un groupe pour les labels des régions
 var regionLabelsGroup = L.featureGroup();
 
 var regionLayer = L.geoJSON(json_Region_3, {
     style: function(feature) {
+        // Récupération du nom de la région pour la couleur
+        var regionName = feature.properties['Région'] || feature.properties['Region'] || 'Inconnu';
         return {
             color: 'rgba(35,35,35,1.0)',
             weight: 1.0,
-            fillColor: 'rgba(122,234,187,1.0)',
-            fillOpacity: 0.3,
+            fillColor: getRegionColor(regionName),
+            fillOpacity: 0.5,
             pane: 'overlayPane'
         };
     },
@@ -429,23 +457,27 @@ document.querySelectorAll('input[name="basemap"]').forEach(function(radio) {
         });
         
         var newLayer;
+        var newMiniLayer;
+
         if (this.value === 'osm') {
             newLayer = osm;
-            osm.addTo(map);
+            newMiniLayer = osmMini;
         } else if (this.value === 'dark') {
             newLayer = dark;
-            dark.addTo(map);
+            newMiniLayer = darkMini;
         } else if (this.value === 'satellite') {
             newLayer = satellite;
-            satellite.addTo(map);
+            newMiniLayer = satelliteMini;
         }
         
+        newLayer.addTo(map);
+
         // Mettre à jour la minimap
         try {
             map.removeControl(miniMap);
         } catch(e) {}
         
-        miniMap = new L.Control.MiniMap(newLayer, {
+        miniMap = new L.Control.MiniMap(newMiniLayer, {
             position: 'bottomright',
             toggleDisplay: false,
             minimized: false
@@ -501,6 +533,18 @@ document.getElementById('search-input').addEventListener('keypress', function(e)
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
+// Variable pour stocker les éléments mis en surbrillance
+var highlightedItems = [];
+
+function clearHighlights() {
+    highlightedItems.forEach(function(item) {
+        if (item.parentLayer && item.parentLayer.resetStyle) {
+            item.parentLayer.resetStyle(item.layer);
+        }
+    });
+    highlightedItems = [];
+}
+
 document.getElementById('draw-query').addEventListener('click', function() {
     drawControl.addTo(map);
     drawControl._toolbars.draw._modes.polygon.handler.enable();
@@ -508,18 +552,37 @@ document.getElementById('draw-query').addEventListener('click', function() {
 
 document.getElementById('clear-query').addEventListener('click', function() {
     drawnItems.clearLayers();
+    clearHighlights();
     map.removeControl(drawControl);
+    document.getElementById('info-console').innerHTML = '';
 });
 
 map.on('draw:created', function(e) {
     var layer = e.layer;
     drawnItems.addLayer(layer);
+    clearHighlights(); // Nettoyer les anciennes sélections
 
     var operator = document.getElementById('spatial-operator').value;
+    var targetLayerVal = document.getElementById('spatial-layer').value;
     var results = [];
 
-    // Vérifier intersection avec chaque couche
-    [regionLayer, departementLayer, arrondissementLayer, routesLayer].forEach(function(lyr) {
+    // Définir les couches à interroger
+    var layersToQuery = [];
+    if (targetLayerVal === 'all') {
+        layersToQuery = [regionLayer, departementLayer, arrondissementLayer, routesLayer];
+    } else if (targetLayerVal === 'region') {
+        layersToQuery = [regionLayer];
+    } else if (targetLayerVal === 'departement') {
+        layersToQuery = [departementLayer];
+    } else if (targetLayerVal === 'arrondissement') {
+        layersToQuery = [arrondissementLayer];
+    } else if (targetLayerVal === 'routes') {
+        layersToQuery = [routesLayer];
+    }
+    // Note: localitesLayer est traité séparément car c'est un MarkerCluster
+
+    // Vérifier intersection avec les couches vectorielles (Polygones/Lignes)
+    layersToQuery.forEach(function(lyr) {
         lyr.eachLayer(function(featureLayer) {
             var intersects = false;
             if (operator === 'intersects') {
@@ -699,10 +762,91 @@ document.getElementById('attribute-query-link').addEventListener('click', functi
     document.getElementById('attribute-query-panel').classList.toggle('show');
 });
 
-document.getElementById('download-csv').addEventListener('click', function() {
-    alert('Téléchargement CSV à implémenter');
-});
+// =========================================
+// GESTION DES TÉLÉCHARGEMENTS
+// =========================================
+document.getElementById('btn-confirm-download').addEventListener('click', function() {
+    var layerKey = document.getElementById('download-layer-select').value;
+    var format = document.getElementById('download-format-select').value;
+    
+    // Récupération des données GeoJSON brutes
+    var data = null;
+    var fileName = "donnees";
+    
+    if (layerKey === 'region') { data = json_Region_3; fileName = "regions_senegal"; }
+    else if (layerKey === 'departement') { data = json_Departement_4; fileName = "departements_senegal"; }
+    else if (layerKey === 'arrondissement') { data = json_Arrondissement_5; fileName = "arrondissements_senegal"; }
+    else if (layerKey === 'routes') { data = json_Routes_6; fileName = "routes_senegal"; }
+    else if (layerKey === 'localites') { data = json_localites_7; fileName = "localites_senegal"; }
+    
+    if (!data) {
+        alert("Erreur : Données non trouvées pour cette couche.");
+        return;
+    }
 
-document.getElementById('download-geojson').addEventListener('click', function() {
-    alert('Téléchargement GeoJSON à implémenter');
+    if (format === 'geojson') {
+        // Téléchargement GeoJSON
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+        var downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", fileName + ".geojson");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        
+    } else if (format === 'csv') {
+        // Téléchargement CSV
+        var csvContent = "data:text/csv;charset=utf-8,";
+        // En-têtes
+        var props = data.features[0].properties;
+        var headers = Object.keys(props);
+        csvContent += headers.join(",") + ",WKT_Geometry\r\n"; // Ajout colonne géométrie
+        
+        // Lignes
+        data.features.forEach(function(feature) {
+            var row = headers.map(function(header) {
+                var val = feature.properties[header];
+                // Gérer les virgules dans les textes
+                return (typeof val === 'string' && val.includes(',')) ? `"${val}"` : val;
+            });
+            // Ajouter une géométrie simplifiée (Point ou Type)
+            var geomType = feature.geometry.type;
+            var coords = JSON.stringify(feature.geometry.coordinates).replace(/,/g, ' '); // Simplification rapide
+            row.push(geomType); 
+            
+            csvContent += row.join(",") + "\r\n";
+        });
+        
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+    } else if (format === 'shp') {
+        // Téléchargement Shapefile (via shp-write)
+        if (typeof shpwrite === 'undefined') {
+            alert("La librairie de génération de Shapefile n'est pas chargée. Vérifiez votre connexion internet.");
+            return;
+        }
+        
+        var options = {
+            folder: fileName,
+            types: {
+                point: fileName,
+                polygon: fileName,
+                line: fileName,
+                polyline: fileName
+            }
+        };
+        
+        // shpwrite déclenche le téléchargement d'un ZIP
+        shpwrite.download(data, options);
+    }
+    
+    // Fermer la modale
+    var downloadModal = bootstrap.Modal.getInstance(document.getElementById('downloadModal'));
+    downloadModal.hide();
 });

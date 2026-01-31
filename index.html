@@ -167,14 +167,10 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="attribute-query-link"><i class="fas fa-filter"></i> Requête attributaire</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="downloadDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-download"></i> Téléchargements
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#downloadModal">
+                            <i class="fas fa-download"></i> Télécharger les données
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" id="download-csv"><i class="fas fa-file-csv"></i> Télécharger CSV</a></li>
-                            <li><a class="dropdown-item" href="#" id="download-geojson"><i class="fas fa-file-code"></i> Télécharger GeoJSON</a></li>
-                        </ul>
                     </li>
                 </ul>
                 <div class="d-flex">
@@ -237,6 +233,14 @@
                         </h2>
                         <div id="spatial-query" class="accordion-collapse collapse" data-bs-parent="#menu-accordion">
                             <div class="accordion-body">
+                                <select class="form-select mb-2" id="spatial-layer">
+                                    <option value="all">Toutes les couches</option>
+                                    <option value="region">Régions</option>
+                                    <option value="departement">Départements</option>
+                                    <option value="arrondissement">Arrondissements</option>
+                                    <option value="routes">Routes</option>
+                                    <option value="localites">Localités</option>
+                                </select>
                                 <select class="form-select mb-2" id="spatial-operator">
                                     <option value="intersects">Intersecte</option>
                                     <option value="contains">Contient</option>
@@ -308,9 +312,24 @@
             <hr>
             <h5><i class="fas fa-palette"></i> Légende</h5>
             <div id="legend-control">
-                <div class="legend-item" id="legend-regions">
-                    <div style="width: 20px; height: 20px; background-color: #7aea9f; border: 1px solid #000;"></div>
-                    <span>Régions</span>
+                <div id="legend-regions">
+                    <h6 class="mb-2">Régions</h6>
+                    <div class="row g-1 mb-2" style="font-size: 0.9em;">
+                        <div class="col-6 d-flex align-items-center"><span style="background:#FF0000; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Dakar</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#00FF00; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Diourbel</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#0000FF; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Fatick</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#FFFF00; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Kaffrine</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#FF00FF; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Kaolack</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#00FFFF; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Kédougou</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#800000; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Kolda</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#008000; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Louga</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#000080; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Matam</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#808000; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Saint-Louis</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#800080; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Sédhiou</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#008080; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Tambacounda</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#C0C0C0; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Thiès</div>
+                        <div class="col-6 d-flex align-items-center"><span style="background:#FFA500; width:15px; height:15px; display:inline-block; border:1px solid #333; margin-right:5px;"></span>Ziguinchor</div>
+                    </div>
                 </div>
                 <div class="legend-item" id="legend-departements">
                     <div style="width: 20px; height: 20px; border: 4px solid #e4261c;"></div>
@@ -395,6 +414,45 @@
         </div>
     </div>
 
+    <!-- Modale de Téléchargement -->
+    <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="downloadModalLabel"><i class="fas fa-file-export me-2"></i>Exporter les données</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="download-layer-select" class="form-label">Choisir la couche :</label>
+                        <select class="form-select" id="download-layer-select">
+                            <option value="region">Régions</option>
+                            <option value="departement">Départements</option>
+                            <option value="arrondissement">Arrondissements</option>
+                            <option value="routes">Routes</option>
+                            <option value="localites">Localités</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="download-format-select" class="form-label">Format :</label>
+                        <select class="form-select" id="download-format-select">
+                            <option value="shp">Shapefile (.zip)</option>
+                            <option value="geojson">GeoJSON (.json)</option>
+                            <option value="csv">CSV (Excel)</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info py-2" style="font-size: 0.9em;">
+                        <i class="fas fa-info-circle"></i> Le format Shapefile sera téléchargé sous forme d'archive ZIP contenant les fichiers .shp, .shx, .dbf et .prj.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success" id="btn-confirm-download">Télécharger</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Carte -->
     <div id="map"></div>
 
@@ -407,6 +465,8 @@
 
     <!-- Scripts -->
     <script src="js/bootstrap.bundle.min.js"></script>
+    <!-- Librairie pour générer les Shapefiles -->
+    <script src="https://unpkg.com/shp-write@0.3.2/shpwrite.js"></script>
     <!-- Data scripts -->
     <script src="data/Region_3.js"></script>
     <script src="data/Departement_4.js"></script>
