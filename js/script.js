@@ -842,8 +842,12 @@ document.getElementById('btn-confirm-download').addEventListener('click', functi
             }
         };
         
-        // shpwrite déclenche le téléchargement d'un ZIP
-        shpwrite.download(data, options);
+        try {
+            shpwrite.download(data, options);
+        } catch (e) {
+            console.error("Erreur shp-write:", e);
+            alert("Erreur lors de la génération du fichier Shapefile. Veuillez réessayer ou choisir le format GeoJSON.");
+        }
     }
     
     // Fermer la modale
