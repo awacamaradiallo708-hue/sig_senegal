@@ -35,6 +35,7 @@ var satelliteMini = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z=
 
 // Ajouter OSM par défaut
 osm.addTo(map);
+var currentBasemap = osm; // Variable pour suivre le fond de carte actuel
 
 // =========================================
 // CONTRÔLES DE LA CARTE
@@ -449,28 +450,27 @@ document.getElementById('basemaps-btn').addEventListener('click', function() {
 // =========================================
 document.querySelectorAll('input[name="basemap"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
-        // Supprimer les anciennes couches de tuiles
-        map.eachLayer(function(layer) {
-            if (layer instanceof L.TileLayer) {
-                map.removeLayer(layer);
-            }
-        });
+        // Supprimer seulement le fond de carte actuel pour ne pas toucher aux autres couches
+        if (currentBasemap) {
+            map.removeLayer(currentBasemap);
+        }
         
         var newLayer;
         var newMiniLayer;
 
         if (this.value === 'osm') {
             newLayer = osm;
-            newMiniLayer = osmMini;
+            newMiniLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png');
         } else if (this.value === 'dark') {
             newLayer = dark;
-            newMiniLayer = darkMini;
+            newMiniLayer = L.tileLayer('https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png');
         } else if (this.value === 'satellite') {
             newLayer = satellite;
-            newMiniLayer = satelliteMini;
+            newMiniLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}');
         }
         
         newLayer.addTo(map);
+        currentBasemap = newLayer; // Mettre à jour la référence
 
         // Mettre à jour la minimap
         try {
