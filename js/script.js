@@ -35,7 +35,15 @@ osm.addTo(map);
 // CONTRÔLES DE LA CARTE
 // =========================================
 L.control.zoom({ position: 'topleft' }).addTo(map);
-L.control.locate({ position: 'topleft' }).addTo(map);
+L.control.locate({
+    position: 'topleft',
+    strings: {
+        title: "Se localiser"
+    },
+    locateOptions: {
+        enableHighAccuracy: true
+    }
+}).addTo(map);
 
 var measureControl = new L.Control.Measure({
     position: 'topleft',
