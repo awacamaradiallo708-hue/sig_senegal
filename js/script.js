@@ -43,11 +43,15 @@ var currentBasemap = osm; // Variable pour suivre le fond de carte actuel
 L.control.zoom({ position: 'topleft' }).addTo(map);
 L.control.locate({
     position: 'topleft',
+    setView: 'untilPan', // Suit la position jusqu'à ce que l'utilisateur bouge la carte
+    flyTo: true,
+    keepCurrentZoomLevel: false,
     strings: {
         title: "Se localiser"
     },
     locateOptions: {
-        enableHighAccuracy: true
+        enableHighAccuracy: true,
+        maxZoom: 16
     }
 }).addTo(map);
 
@@ -833,31 +837,66 @@ document.getElementById('btn-confirm-download').addEventListener('click', functi
         link.remove();
         
     } else if (format === 'shp') {
-        // Téléchargement Shapefile (via shp-write)
-        if (typeof shpwrite === 'undefined') {
-            alert("La librairie de génération de Shapefile n'est pas chargée. Vérifiez votre connexion internet.");
+        // Téléchargement Shapefile (via shp-write) - Amélioré avec gestion d'erreur
+        if (typeof shpwrite === 'undefined' || (typeof d3 !== 'undefined' && typeof d3.queue === 'undefined')) {
+            alert("Une librairie nécessaire (shp-write ou d3-queue) n'est pas chargée. Vérifiez votre connexion internet.");
             return;
         }
         
         var options = {
             folder: fileName,
             types: {
-                point: fileName,
-                polygon: fileName,
-                line: fileName,
-                polyline: fileName
+                point: data.features.some(f => f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint') ? fileName : undefined,
+                polygon: data.features.some(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') ? fileName : undefined,
+                line: data.features.some(f => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') ? fileName : undefined
             }
         };
         
-        try {
-            shpwrite.download(data, options);
-        } catch (e) {
-            console.error("Erreur shp-write:", e);
-            alert("Erreur lors de la génération du fichier Shapefile. Veuillez réessayer ou choisir le format GeoJSON.");
-        }
+        shpwrite.zip(data, options, function(err, content) {
+            if (err) {
+                console.error("Erreur lors de la génération du Shapefile:", err);
+                alert("Une erreur est survenue lors de la création du fichier .zip. Les données de cette couche sont peut-être trop complexes ou incompatibles. Essayez le format GeoJSON.");
+                return;
+            }
+            // La fonction saveAs est incluse dans shpwrite.js
+            saveAs(new Blob([content], { type: 'application/zip' }), fileName + '.zip');
+        });
     }
     
     // Fermer la modale
     var downloadModal = bootstrap.Modal.getInstance(document.getElementById('downloadModal'));
     downloadModal.hide();
+});
+
+// =========================================
+// PWA INSTALLATION
+// =========================================
+let deferredPrompt;
+const installContainer = document.getElementById('install-container');
+const installBtn = document.getElementById('install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Empêcher Chrome 67 et versions antérieures d'afficher automatiquement l'invite
+    e.preventDefault();
+    // Stocker l'événement pour pouvoir le déclencher plus tard
+    deferredPrompt = e;
+    // Mettre à jour l'interface utilisateur pour notifier l'utilisateur qu'il peut ajouter à l'écran d'accueil
+    installContainer.style.display = 'block';
+});
+
+installBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Cacher le bouton
+    installContainer.style.display = 'none';
+    // Afficher l'invite
+    deferredPrompt.prompt();
+    // Attendre que l'utilisateur réponde à l'invite
+    deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+            console.log('L\'utilisateur a accepté l\'installation A2HS');
+        } else {
+            console.log('L\'utilisateur a refusé l\'installation A2HS');
+        }
+        deferredPrompt = null;
+    });
 });

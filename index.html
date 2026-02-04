@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#0d6efd">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <!-- Bootstrap 5 CSS -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -28,6 +30,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation; /* Améliore la réactivité tactile */
         }
         .navbar {
             z-index: 1030;
@@ -170,6 +173,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#downloadModal">
                             <i class="fas fa-download"></i> Télécharger les données
+                        </a>
+                    </li>
+                    <li class="nav-item" id="install-container" style="display: none;">
+                        <a class="nav-link text-warning fw-bold" href="#" id="install-btn">
+                            <i class="fas fa-mobile-alt"></i> Installer l'App
                         </a>
                     </li>
                 </ul>
@@ -486,6 +494,8 @@
     <script src="js/turf.min.js"></script>
     <!-- JSZip 2.x requis pour la compatibilité avec shp-write (placé après les plugins pour éviter les conflits) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/2.6.1/jszip.min.js"></script>
+    <!-- d3-queue est une dépendance pour shp-write -->
+    <script src="https://d3js.org/d3-queue.v3.min.js"></script>
     <!-- Librairie pour générer les Shapefiles -->
     <script src="https://unpkg.com/shp-write@0.3.2/shpwrite.js"></script>
     <!-- Main script -->
