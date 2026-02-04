@@ -433,20 +433,32 @@ updateScale();
 // =========================================
 // GESTION DES PANNEAUX
 // =========================================
+const layersPanel = document.getElementById('layers-panel');
+const basemapsPanel = document.getElementById('basemaps-legend-panel');
+
+// Boutons de la barre de navigation pour ouvrir les panneaux
 document.getElementById('layers-btn').addEventListener('click', function() {
-    document.getElementById('layers-panel').classList.toggle('show');
+    basemapsPanel.classList.remove('show');
+    layersPanel.classList.toggle('show');
 });
 
 document.getElementById('menu-btn').addEventListener('click', function() {
-    document.getElementById('layers-panel').classList.toggle('show');
-});
-
-document.getElementById('close-layers-panel').addEventListener('click', function() {
-    document.getElementById('layers-panel').classList.remove('show');
+    basemapsPanel.classList.remove('show');
+    layersPanel.classList.toggle('show');
 });
 
 document.getElementById('basemaps-btn').addEventListener('click', function() {
-    document.getElementById('basemaps-legend-panel').classList.toggle('show');
+    layersPanel.classList.remove('show');
+    basemapsPanel.classList.toggle('show');
+});
+
+// Boutons de fermeture des panneaux
+document.getElementById('close-layers-panel').addEventListener('click', function() {
+    layersPanel.classList.remove('show');
+});
+
+document.getElementById('close-basemaps-panel').addEventListener('click', function() {
+    basemapsPanel.classList.remove('show');
 });
 
 // =========================================
