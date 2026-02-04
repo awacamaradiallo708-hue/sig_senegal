@@ -461,6 +461,12 @@ document.getElementById('close-basemaps-panel').addEventListener('click', functi
     basemapsPanel.classList.remove('show');
 });
 
+// Fermer les panneaux lors d'un clic sur la carte
+map.on('click', function() {
+    layersPanel.classList.remove('show');
+    basemapsPanel.classList.remove('show');
+});
+
 // =========================================
 // GESTION DES FONDS DE CARTE
 // =========================================
