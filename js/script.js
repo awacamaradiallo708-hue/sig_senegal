@@ -837,29 +837,28 @@ document.getElementById('btn-confirm-download').addEventListener('click', functi
         link.remove();
         
     } else if (format === 'shp') {
-        // Téléchargement Shapefile (via shp-write) - Amélioré avec gestion d'erreur
-        if (typeof shpwrite === 'undefined' || (typeof d3 !== 'undefined' && typeof d3.queue === 'undefined')) {
-            alert("Une librairie nécessaire (shp-write ou d3-queue) n'est pas chargée. Vérifiez votre connexion internet.");
+        // Téléchargement Shapefile (via shp-write)
+        if (typeof shpwrite === 'undefined') {
+            alert("La librairie de génération de Shapefile n'est pas chargée. Vérifiez votre connexion internet.");
             return;
         }
         
         var options = {
             folder: fileName,
             types: {
-                point: data.features.some(f => f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint') ? fileName : undefined,
-                polygon: data.features.some(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') ? fileName : undefined,
-                line: data.features.some(f => f.geometry.type === 'LineString' || f.geometry.type === 'MultiLineString') ? fileName : undefined
+                point: fileName,
+                polygon: fileName,
+                line: fileName
             }
         };
         
         shpwrite.zip(data, options, function(err, content) {
             if (err) {
-                console.error("Erreur lors de la génération du Shapefile:", err);
-                alert("Une erreur est survenue lors de la création du fichier .zip. Les données de cette couche sont peut-être trop complexes ou incompatibles. Essayez le format GeoJSON.");
+                console.error("Erreur shp-write:", err);
+                alert("Erreur lors de la génération du fichier Shapefile. Veuillez réessayer ou choisir le format GeoJSON.");
                 return;
             }
-            // La fonction saveAs est incluse dans shpwrite.js
-            saveAs(new Blob([content], { type: 'application/zip' }), fileName + '.zip');
+            saveAs(content, fileName + '.zip');
         });
     }
     
