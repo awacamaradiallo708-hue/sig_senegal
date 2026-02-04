@@ -854,8 +854,9 @@ document.getElementById('btn-confirm-download').addEventListener('click', functi
         
         shpwrite.zip(data, options, function(err, content) {
             if (err) {
-                console.error("Erreur shp-write:", err);
-                alert("Erreur lors de la génération du fichier Shapefile. Veuillez réessayer ou choisir le format GeoJSON.");
+                console.error("Erreur lors de la génération du Shapefile:", err); // Gardez ceci pour une erreur claire
+                console.dir(err); // Ajoutez ceci pour une inspection détaillée de l'objet
+                alert("Une erreur est survenue lors de la création du fichier .zip. Les données de cette couche sont peut-être trop complexes ou incompatibles. Essayez le format GeoJSON.");
                 return;
             }
             saveAs(content, fileName + '.zip');
