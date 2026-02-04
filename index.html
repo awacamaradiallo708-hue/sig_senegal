@@ -45,7 +45,7 @@
             bottom: 0;
             width: 300px;
             background: white;
-            z-index: 1000;
+            z-index: 2000;
             overflow-y: auto;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border-radius: 12px;
@@ -121,9 +121,12 @@
         /* Responsive pour mobiles et tablettes */
         @media (max-width: 768px) {
             .sidebar {
-                width: 280px;
+                width: 85vw;
+                max-width: 350px;
                 margin: 5px;
-                border-radius: 8px;
+                border-radius: 15px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(5px);
             }
             .sidebar.show {
                 transform: translateX(0);
@@ -133,6 +136,23 @@
             }
             .layers-btn {
                 display: none;
+            }
+            /* Barre d'outils défilante sur mobile */
+            .navbar .d-flex {
+                overflow-x: auto;
+                white-space: nowrap;
+                padding-bottom: 2px;
+                scrollbar-width: none; /* Firefox */
+            }
+            .navbar .d-flex::-webkit-scrollbar {
+                display: none; /* Chrome/Safari */
+            }
+            /* Masquer les boutons moins prioritaires sur mobile */
+            #print-btn, #home-btn {
+                display: none;
+            }
+            #search-input {
+                width: 150px !important;
             }
             #map {
                 height: calc(100vh - 56px);

@@ -40,7 +40,7 @@ var currentBasemap = osm; // Variable pour suivre le fond de carte actuel
 // =========================================
 // CONTRÔLES DE LA CARTE
 // =========================================
-L.control.zoom({ position: 'topleft' }).addTo(map);
+// L.control.zoom({ position: 'topleft' }).addTo(map); // Désactivé pour éviter la redondance et gagner de l'espace
 L.control.locate({
     position: 'topleft',
     setView: 'untilPan', // Suit la position jusqu'à ce que l'utilisateur bouge la carte
